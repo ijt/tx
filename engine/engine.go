@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -98,7 +99,13 @@ func (e *E) Run(r io.Reader, w io.Writer) error {
 	}
 
 	fmt.Fprintln(w, "client, available, held, total, locked")
-	for id, cli := range e.clients {
+	var ids []string
+	for id := range e.clients {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		cli := e.clients[id]
 		total := cli.available + cli.held
 		fmt.Fprintf(w, "%s, %.4f, %.4f, %.4f, %v\n", id, cli.available, cli.held, total, cli.locked)
 	}
