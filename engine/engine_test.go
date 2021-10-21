@@ -47,6 +47,16 @@ withdrawal, 2, 5, 3.0
 2, -1.0000, 0.0000, -1.0000, false
 `,
 		},
+		{
+			name: "dispute",
+			input: `type, client, tx, amount
+deposit, 1, 1, 2.0
+dispute, 1, 1			
+`,
+			wantOutput: `client, available, held, total, locked
+1, 0, 2.0000, 2.0000, false
+			`,
+		},
 	}
 
 	for _, test := range tests {
