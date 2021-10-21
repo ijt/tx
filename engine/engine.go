@@ -73,6 +73,10 @@ func (e *E) Run(r io.Reader, w io.Writer) error {
 				cli.held += dtx.amount
 
 			case "resolve":
+				txID := strings.TrimSpace(row[2])
+				dtx := e.transactions[txID]
+				cli.available += dtx.amount
+				cli.held -= dtx.amount
 
 			case "chargeback":
 
