@@ -68,6 +68,17 @@ resolve, 1, 1
 1, 2.0000, 0.0000, 2.0000, false
 `,
 		},
+		{
+			name: "chargeback",
+			input: `type, client, tx, amount
+deposit, 1, 1, 2.0
+dispute, 1, 1			
+chargeback, 1, 1			
+`,
+			wantOutput: `client, available, held, total, locked
+1, 0.0000, 0.0000, 0.0000, true
+`,
+		},
 	}
 
 	for _, test := range tests {

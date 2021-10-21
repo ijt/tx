@@ -79,6 +79,10 @@ func (e *E) Run(r io.Reader, w io.Writer) error {
 				cli.held -= dtx.amount
 
 			case "chargeback":
+				txID := strings.TrimSpace(row[2])
+				dtx := e.transactions[txID]
+				cli.held -= dtx.amount
+				cli.locked = true
 
 			default:
 				return fmt.Errorf("unrecognized 3-item transaction type %q at line %d", typ, lineNumber)
