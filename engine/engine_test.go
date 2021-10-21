@@ -3,10 +3,10 @@ package engine
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os/exec"
 	"strings"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestCSVs(t *testing.T) {
@@ -40,11 +40,11 @@ deposit, 1, 1, 1.0
 deposit, 2, 2, 2.0
 deposit, 1, 3, 2.0
 withdrawal, 1, 4, 1.5
-withdrawal, 2, 5, 3.0	
+withdrawal, 2, 5, 3.0 
 `,
 			wantOutput: `client, available, held, total, locked
-1, 1.5, 0.0, 1.5, false
-2, 2.0, 0.0, 2.0, false
+1, 1.5000, 0.0000, 1.5000, false
+2, -1.0000, 0.0000, -1.0000, false
 `,
 		},
 	}
@@ -54,15 +54,49 @@ withdrawal, 2, 5, 3.0
 			e := New()
 			var buf bytes.Buffer
 			err := e.Run(strings.NewReader(test.input), &buf)
-			output := buf.String()
-			errStr := fmt.Sprintf("%v", err)
-			wantErrStr := fmt.Sprintf("%v", test.wantError)
-			if !strings.HasPrefix(errStr, wantErrStr) {
-				t.Fatalf("e.Run() returned error %q, want something starting with %q", errStr, wantErrStr)
+			if test.wantError == nil {
+				if err != nil {
+					t.Fatalf("e.Run() returned error %q", err)
+				}
+			} else {
+				errStr := fmt.Sprintf("%v", err)
+				wantErrStr := fmt.Sprintf("%v", test.wantError)
+				if !strings.HasPrefix(errStr, wantErrStr) {
+					t.Fatalf("e.Run() returned error %q, want something starting with %q", errStr, wantErrStr)
+				}
 			}
-			if diff := cmp.Diff(test.wantOutput, output); diff != "" {
+			output := buf.String()
+			if test.wantOutput != output {
+				diff, err := fileDiff(test.wantOutput, output)
+				if err != nil {
+					t.Fatalf("diffing results: %v", err)
+				}
 				t.Errorf("e.Run() gave an unexpected result (-want, +got):\n%s", diff)
 			}
 		})
 	}
+}
+
+func fileDiff(want, got string) (string, error) {
+	wantFile, err := ioutil.TempFile("/tmp", "want")
+	if err != nil {
+		return "", fmt.Errorf("making first temp file: %v", err)
+	}
+
+	gotFile, err := ioutil.TempFile("/tmp", "got")
+	if err != nil {
+		return "", fmt.Errorf("making second temp file: %v", err)
+	}
+
+	if nw, err := wantFile.WriteString(want); err != nil {
+		return "", fmt.Errorf("writing contents of wantFile (%d bytes written): %v", nw, err)
+	}
+	if nw, err := gotFile.WriteString(got); err != nil {
+		return "", fmt.Errorf("writing contents of gotFile (%d bytes written): %v", nw, err)
+	}
+
+	cmd := exec.Command("diff", "-u", wantFile.Name(), gotFile.Name())
+	// err is non-nil if there is a non-zero diff, so just ignore it.
+	out, _ := cmd.CombinedOutput()
+	return string(out), nil
 }
