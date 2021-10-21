@@ -70,23 +70,19 @@ func (e *E) Run(r io.Reader, w io.Writer) error {
 		}
 
 		if len(row) == 3 {
+			txID := strings.TrimSpace(row[2])
+			tx := e.transactions[txID]
 			switch typ {
 			case "dispute":
-				txID := strings.TrimSpace(row[2])
-				dtx := e.transactions[txID]
-				cli.available -= dtx.amount
-				cli.held += dtx.amount
+				cli.available -= tx.amount
+				cli.held += tx.amount
 
 			case "resolve":
-				txID := strings.TrimSpace(row[2])
-				dtx := e.transactions[txID]
-				cli.available += dtx.amount
-				cli.held -= dtx.amount
+				cli.available += tx.amount
+				cli.held -= tx.amount
 
 			case "chargeback":
-				txID := strings.TrimSpace(row[2])
-				dtx := e.transactions[txID]
-				cli.held -= dtx.amount
+				cli.held -= tx.amount
 				cli.locked = true
 
 			default:
