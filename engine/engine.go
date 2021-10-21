@@ -1,3 +1,4 @@
+// package engine implements a payment transactions engine.
 package engine
 
 import (
@@ -10,6 +11,7 @@ import (
 	"strings"
 )
 
+// E is a payment transactions engine.
 type E struct {
 	clients      map[string]*client
 	transactions map[string]transaction
@@ -26,6 +28,7 @@ type transaction struct {
 	amount float64
 }
 
+// New creates a new payment transactions engine.
 func New() *E {
 	return &E{
 		clients:      make(map[string]*client),
@@ -33,6 +36,8 @@ func New() *E {
 	}
 }
 
+// Run executes transactions given by the reader r, then outputs the end state
+// of client accounts as CSV to the writer w.
 func (e *E) Run(r io.Reader, w io.Writer) error {
 	cr := csv.NewReader(r)
 	cr.TrimLeadingSpace = true
