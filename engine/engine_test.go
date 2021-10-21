@@ -19,19 +19,19 @@ func TestCSVs(t *testing.T) {
 		{
 			name:       "empty",
 			input:      "",
-			wantOutput: "client, available, held, total, locked",
+			wantOutput: "",
 			wantError:  fmt.Errorf("missing header"),
 		},
 		{
 			name:       "bad header",
 			input:      "foo, bar, baz, qux, quax",
-			wantOutput: "client, available, held, total, locked",
+			wantOutput: "",
 			wantError:  fmt.Errorf("invalid header"),
 		},
 		{
 			name:       "empty body",
 			input:      "type, client, tx, amount",
-			wantOutput: "client, available, held, total, locked",
+			wantOutput: "client, available, held, total, locked\n",
 		},
 		{
 			name: "example from requirements doc",
@@ -57,8 +57,8 @@ withdrawal, 2, 5, 3.0
 			output := buf.String()
 			errStr := fmt.Sprintf("%v", err)
 			wantErrStr := fmt.Sprintf("%v", test.wantError)
-			if errStr != wantErrStr {
-				t.Fatalf("e.Run() returned error %q, want %q", errStr, wantErrStr)
+			if !strings.HasPrefix(errStr, wantErrStr) {
+				t.Fatalf("e.Run() returned error %q, want something starting with %q", errStr, wantErrStr)
 			}
 			if diff := cmp.Diff(test.wantOutput, output); diff != "" {
 				t.Errorf("e.Run() gave an unexpected result (-want, +got):\n%s", diff)
