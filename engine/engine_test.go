@@ -54,8 +54,8 @@ deposit, 1, 1, 2.0
 dispute, 1, 1			
 `,
 			wantOutput: `client, available, held, total, locked
-1, 0, 2.0000, 2.0000, false
-			`,
+1, 0.0000, 2.0000, 2.0000, false
+`,
 		},
 	}
 

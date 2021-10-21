@@ -10,7 +10,8 @@ import (
 )
 
 type E struct {
-	clients map[string]*client
+	clients      map[string]*client
+	transactions map[string]transaction
 }
 
 type client struct {
@@ -19,8 +20,16 @@ type client struct {
 	locked    bool
 }
 
+type transaction struct {
+	typ    string
+	amount float64
+}
+
 func New() *E {
-	return &E{clients: make(map[string]*client)}
+	return &E{
+		clients:      make(map[string]*client),
+		transactions: make(map[string]transaction),
+	}
 }
 
 func (e *E) Run(r io.Reader, w io.Writer) error {
@@ -41,22 +50,41 @@ func (e *E) Run(r io.Reader, w io.Writer) error {
 	// Process all transactions.
 	lineNumber := 1
 	for {
-		tx, err := cr.Read()
+		row, err := cr.Read()
 		lineNumber++
 		if err == io.EOF {
 			break
 		}
-		typ := tx[0]
-		id := tx[1]
-		amtStr := strings.TrimSpace(tx[3])
-		amt, err := strconv.ParseFloat(amtStr, 64)
-		if err != nil {
-			return fmt.Errorf("invalid amount %q at line %d", amtStr, lineNumber)
-		}
+		typ := row[0]
+		id := row[1]
 		cli := e.clients[id]
 		if cli == nil {
 			cli = &client{}
 			e.clients[id] = cli
+		}
+
+		if len(row) == 3 {
+			switch typ {
+			case "dispute":
+				txID := strings.TrimSpace(row[2])
+				dtx := e.transactions[txID]
+				cli.available -= dtx.amount
+				cli.held += dtx.amount
+
+			case "resolve":
+
+			case "chargeback":
+
+			default:
+				return fmt.Errorf("unrecognized 3-item transaction type %q at line %d", typ, lineNumber)
+			}
+			continue
+		}
+
+		amtStr := strings.TrimSpace(row[3])
+		amt, err := strconv.ParseFloat(amtStr, 64)
+		if err != nil {
+			return fmt.Errorf("invalid amount %q at line %d", amtStr, lineNumber)
 		}
 		switch typ {
 		case "deposit":
@@ -66,6 +94,7 @@ func (e *E) Run(r io.Reader, w io.Writer) error {
 		default:
 			return fmt.Errorf("unrecognized transaction type %q at line %d", typ, lineNumber)
 		}
+		e.transactions[strings.TrimSpace(row[2])] = transaction{typ: typ, amount: amt}
 	}
 
 	fmt.Fprintln(w, "client, available, held, total, locked")
